@@ -61,6 +61,7 @@ typedef struct _jl_ast_context_t {
     value_t error_sym;
     value_t null_sym;
     value_t jlgensym_sym;
+    value_t slot_sym;
     arraylist_t gensym_to_flisp;
     jl_ast_context_list_t list;
     int ref;
@@ -210,7 +211,8 @@ static void jl_init_ast_ctx(jl_ast_context_t *ast_ctx)
     jl_ast_ctx(fl_ctx)->false_sym = symbol(fl_ctx, "false");
     jl_ast_ctx(fl_ctx)->error_sym = symbol(fl_ctx, "error");
     jl_ast_ctx(fl_ctx)->null_sym = symbol(fl_ctx, "null");
-    jl_ast_ctx(fl_ctx)->jlgensym_sym = symbol(fl_ctx, "jlgensym");
+    jl_ast_ctx(fl_ctx)->jlgensym_sym = symbol(fl_ctx, "val");
+    jl_ast_ctx(fl_ctx)->slot_sym = symbol(fl_ctx, "slot");
 
     // Enable / disable syntax deprecation warnings
     // Disable in imaging mode to avoid i/o errors (#10727)
@@ -440,11 +442,14 @@ static jl_value_t *scm_to_julia_(fl_context_t *fl_ctx, value_t e, int eo)
         else {
             hd = car_(e);
             if (hd == jl_ast_ctx(fl_ctx)->jlgensym_sym) {
-                size_t genid = numval(car_(cdr_(e)));
-                return jl_box_gensym(genid);
+                return jl_box_gensym(numval(car_(cdr_(e))));
             }
-            if (hd == jl_ast_ctx(fl_ctx)->null_sym && llength(e) == 1)
+            else if (hd == jl_ast_ctx(fl_ctx)->slot_sym) {
+                return jl_new_struct(jl_slot_type, jl_box_long(numval(car_(cdr_(e)))), jl_any_type);
+            }
+            else if (hd == jl_ast_ctx(fl_ctx)->null_sym && llength(e) == 1) {
                 return jl_nothing;
+            }
         }
         if (issymbol(hd))
             sym = scmsym_to_julia(fl_ctx, hd);
@@ -670,6 +675,8 @@ static value_t julia_to_scm_(fl_context_t *fl_ctx, jl_value_t *v)
     // GC Note: jl_fieldref(v, 0) allocate for LabelNode, GotoNode
     //          but we don't need a GC root here because julia_to_list2
     //          shouldn't allocate in this case.
+    if (jl_typeis(v, jl_slot_type))
+        return julia_to_list2(fl_ctx, (jl_value_t*)slot_sym, jl_fieldref(v,0));
     if (jl_typeis(v, jl_labelnode_type))
         return julia_to_list2(fl_ctx, (jl_value_t*)label_sym, jl_fieldref(v,0));
     if (jl_typeis(v, jl_gotonode_type))

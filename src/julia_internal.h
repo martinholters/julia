@@ -183,8 +183,6 @@ jl_value_t *jl_eval_global_var(jl_module_t *m, jl_sym_t *e);
 jl_value_t *jl_parse_eval_all(const char *fname, size_t len,
                               const char *content, size_t contentlen);
 jl_value_t *jl_interpret_toplevel_thunk(jl_lambda_info_t *lam);
-jl_value_t *jl_interpret_toplevel_thunk_with(jl_lambda_info_t *lam,
-                                             jl_value_t **loc, size_t nl);
 jl_value_t *jl_interpret_toplevel_expr(jl_value_t *e);
 jl_value_t *jl_static_eval(jl_value_t *ex, void *ctx_, jl_module_t *mod,
                            jl_lambda_info_t *li, int sparams, int allow_alloc);
