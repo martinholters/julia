@@ -544,6 +544,20 @@ static jl_value_t *scm_to_julia_(fl_context_t *fl_ctx, value_t e, int eo)
                 JL_GC_POP();
                 return temp;
             }
+            if (sym == return_sym) {
+                return jl_new_struct(jl_returnnode_type,
+                                     scm_to_julia_(car_(e),0));
+            }
+            if (sym == assign_sym) {
+                return jl_new_struct(jl_assignnode_type,
+                                     scm_to_julia_(car_(e),0),
+                                     scm_to_julia_(car_(cdr_(e)),0));
+            }
+            if (sym == goto_ifnot_sym) {
+                return jl_new_struct(jl_gotoifnotnode_type,
+                                     scm_to_julia_(car_(e),0),
+                                     scm_to_julia_(car_(cdr_(e)),0));
+            }
             JL_GC_POP();
         }
         else if (sym == inert_sym && !iscons(car_(e))) {
