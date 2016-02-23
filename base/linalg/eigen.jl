@@ -155,7 +155,9 @@ function eig(A::AbstractMatrix, B::AbstractMatrix)
     F.values, F.vectors
 end
 function eig(A::Number, B::Number)
-    F = eigfact(A,B)
+    a = fill(A,1,1)
+    b = fill(B,1,1)
+    F = eigfact(a,b)
     F.values, F.vectors
 end
 
