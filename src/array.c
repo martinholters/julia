@@ -681,6 +681,8 @@ JL_DLLEXPORT void jl_array_sizehint(jl_array_t *a, size_t sz)
 
 JL_DLLEXPORT void jl_array_grow_beg(jl_array_t *a, size_t inc)
 {
+    // For pointer array the memory before a->offset should be always 0
+    // in order to avoid clearing the memory in the fast path
     if (inc == 0) return;
     // designed to handle the case of growing and shrinking at both ends
     if (a->flags.isshared) array_try_unshare(a);
@@ -711,7 +713,13 @@ JL_DLLEXPORT void jl_array_grow_beg(jl_array_t *a, size_t inc)
         else {
             size_t center = (a->maxsize - (alen + inc))/2;
             char *newdata = (char*)a->data - es*a->offset + es*center;
-            memmove(&newdata[incnb], a->data, anb);
+            char *newstart = &newdata[incnb]; // new start of valid data
+            memmove(newstart, a->data, anb);
+            // For pointer array we need to make sure that the memory from the
+            // actual start of the buffer to the beginning of new valid data
+            // are all #undef
+            if (a->flags.ptrarray && newstart > (char*)a->data)
+                memset((char*)a->data, 0, newstart - (char*)a->data);
             a->data = newdata;
             a->offset = center;
         }
@@ -755,6 +763,10 @@ JL_DLLEXPORT void jl_array_del_beg(jl_array_t *a, size_t dec)
         size_t delta = (offset - newoffs)*es;
         a->data = (char*)a->data - delta;
         memmove(a->data, (char*)a->data + delta, anb);
+    }
+    if (a->flags.ptrarray && newoffs > a->offset) {
+        size_t toclear = (newoffs - a->offset) * es;
+        memset((char*)a->data - toclear, 0, toclear);
     }
     a->offset = newoffs;
 }

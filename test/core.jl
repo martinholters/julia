@@ -3777,3 +3777,43 @@ let ex = quote
          end
     @test ex.args[2] == :test
 end
+
+let ary = Vector{Any}(10)
+    check_undef_and_fill(ary, rng) = for i in rng
+        @test !isdefined(ary, i)
+        ary[i] = i
+        @test isdefined(ary, i)
+    end
+    # Check if the memory is initially zerod and fill it with value
+    # to check if these values are not reused later.
+    check_undef_and_fill(ary, 1:10)
+    # Check if the memory grown at the end are zerod
+    ccall(:jl_array_grow_end, Void, (Any, Csize_t), ary, 10)
+    check_undef_and_fill(ary, 11:20)
+    # Make sure the content of the memory deleted at the end are not reused
+    ccall(:jl_array_del_end, Void, (Any, Csize_t), ary, 5)
+    ccall(:jl_array_grow_end, Void, (Any, Csize_t), ary, 5)
+    check_undef_and_fill(ary, 16:20)
+
+    # Now check grow/del_end
+    ary = Vector{Any}(1010)
+    check_undef_and_fill(ary, 1:1010)
+    # This del_beg should move the buffer
+    ccall(:jl_array_del_beg, Void, (Any, Csize_t), ary, 1000)
+    ccall(:jl_array_grow_beg, Void, (Any, Csize_t), ary, 1000)
+    check_undef_and_fill(ary, 1:1000)
+    ary = Vector{Any}(1010)
+    check_undef_and_fill(ary, 1:1010)
+    # This del_beg should not move the buffer
+    ccall(:jl_array_del_beg, Void, (Any, Csize_t), ary, 10)
+    ccall(:jl_array_grow_beg, Void, (Any, Csize_t), ary, 10)
+    check_undef_and_fill(ary, 1:10)
+
+    ary = Vector{Any}(1010)
+    check_undef_and_fill(ary, 1:1010)
+    ccall(:jl_array_grow_end, Void, (Any, Csize_t), ary, 10)
+    check_undef_and_fill(ary, 1011:1020)
+    ccall(:jl_array_del_end, Void, (Any, Csize_t), ary, 10)
+    ccall(:jl_array_grow_beg, Void, (Any, Csize_t), ary, 10)
+    check_undef_and_fill(ary, 1:10)
+end
