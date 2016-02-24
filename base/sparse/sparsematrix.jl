@@ -2764,12 +2764,12 @@ end
 
 # Sparse concatenation
 
-function vcat(X::SparseMatrixCSC...)
+function vcat{Tv,Ti<:Integer}(::Type{SparseMatrixCSC{Tv,Ti}}, X::SparseMatrixCSC...)
     num = length(X)
-    mX = [ size(x, 1) for x in X ]
-    nX = [ size(x, 2) for x in X ]
+    mX = Int[ size(x, 1) for x in X ]
+    nX = Int[ size(x, 2) for x in X ]
     m = sum(mX)
-    n = nX[1]
+    n = num == 0 ? 0 : nX[1]
 
     for i = 2 : num
         if nX[i] != n
@@ -2777,14 +2777,7 @@ function vcat(X::SparseMatrixCSC...)
         end
     end
 
-    Tv = eltype(X[1].nzval)
-    Ti = eltype(X[1].rowval)
-    for i = 2:length(X)
-        Tv = promote_type(Tv, eltype(X[i].nzval))
-        Ti = promote_type(Ti, eltype(X[i].rowval))
-    end
-
-    nnzX = [ nnz(x) for x in X ]
+    nnzX = Int[ nnz(x) for x in X ]
     nnz_res = sum(nnzX)
     colptr = Array(Ti, n + 1)
     rowval = Array(Ti, nnz_res)
@@ -2823,22 +2816,26 @@ end
     end
 end
 
+function vcat(x1::SparseMatrixCSC, X::SparseMatrixCSC...)
+    Tv = promote_type(eltype(x1.nzval), map(x->eltype(x.nzval), X)...)
+    Ti = promote_type(eltype(x1.rowval), map(x->eltype(x.rowval), X)...)
+    vcat(SparseMatrixCSC{Tv,Ti}, x1, X...)
+end
 
-function hcat(X::SparseMatrixCSC...)
+vcat{T<:SparseMatrixCSC}(X::T...) = vcat(T, X...)
+
+function hcat{Tv,Ti<:Integer}(::Type{SparseMatrixCSC{Tv,Ti}}, X::SparseMatrixCSC...)
     num = length(X)
-    mX = [ size(x, 1) for x in X ]
-    nX = [ size(x, 2) for x in X ]
-    m = mX[1]
+    mX = Int[ size(x, 1) for x in X ]
+    nX = Int[ size(x, 2) for x in X ]
+    m = num == 0 ? 0 : mX[1]
     for i = 2 : num
         if mX[i] != m; throw(DimensionMismatch("")); end
     end
     n = sum(nX)
 
-    Tv = promote_type(map(x->eltype(x.nzval), X)...)
-    Ti = promote_type(map(x->eltype(x.rowval), X)...)
-
     colptr = Array(Ti, n + 1)
-    nnzX = [ nnz(x) for x in X ]
+    nnzX = Int[ nnz(x) for x in X ]
     nnz_res = sum(nnzX)
     rowval = Array(Ti, nnz_res)
     nzval = Array(Tv, nnz_res)
@@ -2858,9 +2855,18 @@ function hcat(X::SparseMatrixCSC...)
         nnz_sofar += nnzX[i]
         nX_sofar += nX[i]
     end
+    colptr[end] = nnz_sofar + 1
 
     SparseMatrixCSC(m, n, colptr, rowval, nzval)
 end
+
+function hcat(x1::SparseMatrixCSC, X::SparseMatrixCSC...)
+    Tv = promote_type(eltype(x1.nzval), map(x->eltype(x.nzval), X)...)
+    Ti = promote_type(eltype(x1.rowval), map(x->eltype(x.rowval), X)...)
+    hcat(SparseMatrixCSC{Tv,Ti}, x1, X...)
+end
+
+hcat{T<:SparseMatrixCSC}(X::T...) = hcat(T, X...)
 
 function hvcat(rows::Tuple{Vararg{Int}}, X::SparseMatrixCSC...)
     nbr = length(rows)  # number of block rows
@@ -2879,18 +2885,15 @@ end
 
 Concatenate matrices block-diagonally. Currently only implemented for sparse matrices.
 """
-function blkdiag(X::SparseMatrixCSC...)
+function blkdiag{Tv,Ti<:Integer}(::Type{SparseMatrixCSC{Tv,Ti}}, X::SparseMatrixCSC...)
     num = length(X)
-    mX = [ size(x, 1) for x in X ]
-    nX = [ size(x, 2) for x in X ]
+    mX = Int[ size(x, 1) for x in X ]
+    nX = Int[ size(x, 2) for x in X ]
     m = sum(mX)
     n = sum(nX)
 
-    Tv = promote_type(map(x->eltype(x.nzval), X)...)
-    Ti = promote_type(map(x->eltype(x.rowval), X)...)
-
     colptr = Array(Ti, n + 1)
-    nnzX = [ nnz(x) for x in X ]
+    nnzX = Int[ nnz(x) for x in X ]
     nnz_res = sum(nnzX)
     rowval = Array(Ti, nnz_res)
     nzval = Array(Tv, nnz_res)
@@ -2906,9 +2909,18 @@ function blkdiag(X::SparseMatrixCSC...)
         nX_sofar += nX[i]
         mX_sofar += mX[i]
     end
+    colptr[end] = nnz_sofar + 1
 
     SparseMatrixCSC(m, n, colptr, rowval, nzval)
 end
+
+function blkdiag(x1::SparseMatrixCSC, X::SparseMatrixCSC...)
+    Tv = promote_type(eltype(x1.nzval), map(x->eltype(x.nzval), X)...)
+    Ti = promote_type(eltype(x1.rowval), map(x->eltype(x.rowval), X)...)
+    blkdiag(SparseMatrixCSC{Tv,Ti}, x1, X...)
+end
+
+blkdiag{T<:SparseMatrixCSC}(X::T...) = blkdiag(T, X...)
 
 ## Structure query functions
 issymmetric(A::SparseMatrixCSC) = is_hermsym(A, IdFun())
