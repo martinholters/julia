@@ -207,7 +207,7 @@ jl_expr_t *jl_lam_body(jl_expr_t *l);
 int jl_local_in_linfo(jl_lambda_info_t *linfo, jl_sym_t *sym);
 jl_value_t *jl_first_argument_datatype(jl_value_t *argtypes);
 jl_value_t *jl_preresolve_globals(jl_value_t *expr, jl_lambda_info_t *lam);
-int jl_has_intrinsics(jl_lambda_info_t *li, jl_expr_t *e, jl_module_t *m);
+int jl_has_intrinsics(jl_lambda_info_t *li, jl_value_t *e, jl_module_t *m);
 
 jl_value_t *jl_nth_slot_type(jl_tupletype_t *sig, size_t i);
 void jl_compute_field_offsets(jl_datatype_t *st);

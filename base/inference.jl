@@ -2671,13 +2671,13 @@ function inlining_pass(e::Expr, sv, ast)
                 eargs[i] = res[1]
             elseif isa(ei,AssignNode) && isa(ei.rhs,Expr)
                 res = inlining_pass(ei.rhs, sv, ast)
-                e = AssignNode(re.lhs, es[1])
+                eargs[i] = AssignNode(re.lhs, res[1])
             elseif isa(ei,GotoIfNotNode) && isa(ei.cond,Expr)
                 res = inlining_pass(ei.cond, sv, ast)
-                e = GotoIfNotNode(res[1], e.label)
+                eargs[i] = GotoIfNotNode(res[1], ei.label)
             elseif isa(ei,ReturnNode) && isa(ei.expr,Expr)
                 res = inlining_pass(ei.expr, sv, ast)
-                e = ReturnNode(res[1])
+                eargs[i] = ReturnNode(res[1])
             else
                 i += 1
                 continue
