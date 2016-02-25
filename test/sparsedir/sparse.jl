@@ -27,11 +27,19 @@ do33 = ones(3)
 
 # check horiz concatenation
 @test all([se33 se33] == sparse([1, 2, 3, 1, 2, 3], [1, 2, 3, 4, 5, 6], ones(6)))
+@test all(hcat(SparseMatrixCSC{Int32,Int16}, se33, se33) == sparse([1, 2, 3, 1, 2, 3], [1, 2, 3, 4, 5, 6], ones(6)))
+@test typeof(hcat(SparseMatrixCSC{Int32,Int16}, se33, se33)) == SparseMatrixCSC{Int32,Int16}
+@test all(hcat(SparseMatrixCSC{Int32,Int16}) == spzeros(0, 0))
+@test typeof(hcat(SparseMatrixCSC{Int32,Int16})) == SparseMatrixCSC{Int32,Int16}
 
 # check vert concatenation
 @test all([se33; se33] == sparse([1, 4, 2, 5, 3, 6], [1, 1, 2, 2, 3, 3], ones(6)))
 se33_32bit = convert(SparseMatrixCSC{Float32,Int32}, se33)
 @test all([se33; se33_32bit] == sparse([1, 4, 2, 5, 3, 6], [1, 1, 2, 2, 3, 3], ones(6)))
+@test all(vcat(SparseMatrixCSC{Int32,Int16}, se33, se33_32bit) == sparse([1, 4, 2, 5, 3, 6], [1, 1, 2, 2, 3, 3], ones(6)))
+@test typeof(vcat(SparseMatrixCSC{Int32,Int16}, se33, se33_32bit)) == SparseMatrixCSC{Int32,Int16}
+@test all(vcat(SparseMatrixCSC{Int32,Int16}) == spzeros(0, 0))
+@test typeof(vcat(SparseMatrixCSC{Int32,Int16})) == SparseMatrixCSC{Int32,Int16}
 
 # check h+v concatenation
 se44 = speye(4)
@@ -43,6 +51,10 @@ se77 = speye(7)
 
 # check blkdiag concatenation
 @test all(blkdiag(se33, se33) == sparse([1, 2, 3, 4, 5, 6], [1, 2, 3, 4, 5, 6], ones(6)))
+@test all(blkdiag(SparseMatrixCSC{Int32,Int16}, se33, se33) == sparse([1, 2, 3, 4, 5, 6], [1, 2, 3, 4, 5, 6], ones(6)))
+@test typeof(blkdiag(SparseMatrixCSC{Int32,Int16}, se33, se33)) == SparseMatrixCSC{Int32,Int16}
+@test all(blkdiag(SparseMatrixCSC{Int32,Int16}) == spzeros(0, 0))
+@test typeof(blkdiag(SparseMatrixCSC{Int32,Int16})) == SparseMatrixCSC{Int32,Int16}
 
 # check concatenation promotion
 sz41_f32 = spzeros(Float32, 4, 1)
